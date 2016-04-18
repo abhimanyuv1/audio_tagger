@@ -1,5 +1,11 @@
-Dependencies:
+Description:
 
+Attempt to build application which take any random file, find out format of file,
+rename it with correct extension. 
+
+Use acousticID to search for audio info and fill the audio tags with the info.
+
+Dependencies:
 aptitude install python-mediainfodll
 
 How to use:
