@@ -1,0 +1,7 @@
+Dependencies:
+
+aptitude install python-mediainfodll
+
+How to use:
+https://github.com/MediaArea/MediaInfoLib/blob/master/Source/Example/HowToUse_Dll.py
+
