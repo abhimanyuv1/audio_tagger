@@ -5,10 +5,10 @@ import argparse
 import subprocess
 import requests
 import json
-from MediaInfoDLL import *	
+from MediaInfoDLL import MediaInfo, Stream
 
 # https://acoustid.org/webservice
-ACOUSTID_CLIENT_ID = "lkIelr9JXAQ"
+ACOUSTID_CLIENT_ID = "g4mgdCmxmd"	# registered id
 ACOUSTID_API_SERVER = "http://api.acoustid.org/v2/lookup"
 
 MI = MediaInfo()
@@ -52,7 +52,7 @@ def get_audio_info(fingerprint, duration):
 	# Add client
 	url += "?client={}".format(ACOUSTID_CLIENT_ID)
 	# Add meta
-	url += "&meta=recordings+releasegroups+compress"
+	url += "&meta=recordings+compress"
 	# Add duration
 	url += "&duration={}".format(duration)
 	# Add fingerprint
@@ -68,17 +68,19 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	print "Scanning ...", args.path
-	output_path =  args.output_path
-	if not output_path:
-		output_path = args.path
+	in_path = os.path.abspath(os.path.expanduser(args.path))
+	print "Scanning ...", in_path
+	if args.output_path:
+		output_path =  os.path.abspath(os.path.expanduser(args.output_path))
+	else:
+		output_path = in_path
 	print "Output path ...", output_path
 
 	if not os.path.exists(output_path):
 		print "Creating output directory ...", output_path
 		os.makedirs(output_path)
 
-	for root, dirs, files in os.walk(args.path, topdown=False):
+	for root, dirs, files in os.walk(in_path, topdown=False):
 		for name in files:
 			ext = find_file_extension(root, name)
 			rename_file (root, output_path, name, ext)
