@@ -5,7 +5,8 @@ import argparse
 import subprocess
 import requests
 import json
-from MediaInfoDLL import MediaInfo, Stream
+import taglib
+from MediaInfoDLL import *
 
 # https://acoustid.org/webservice
 ACOUSTID_CLIENT_ID = "g4mgdCmxmd"	# registered id
@@ -14,9 +15,9 @@ ACOUSTID_API_SERVER = "http://api.acoustid.org/v2/lookup"
 MI = MediaInfo()
 
 def find_file_extension(root, file_name):
-	print "Analysing file ...", file_name
 	ext = ""
-	abs_file_path = root + file_name
+	abs_file_path = os.path.join(root,file_name)
+	print "Analysing file ...", abs_file_path
 	MI.Open(abs_file_path)
 	container = MI.Get(Stream.General, 0, u"CodecID")
 	if not container:
@@ -29,7 +30,7 @@ def find_file_extension(root, file_name):
 	MI.Close()
 	return ext
 
-def rename_file(oldroot, newroot, name, ext):
+def rename_and_append_ext(oldroot, newroot, name, ext):
 	filename, curr_ext = os.path.splitext(name)
 	if curr_ext != ext:
 		filename = filename + ext
@@ -37,6 +38,15 @@ def rename_file(oldroot, newroot, name, ext):
 		new_file_path = os.path.join(newroot, filename)
 		print "rename {} to {}".format(old_file_path, new_file_path)
 		os.rename(old_file_path, new_file_path)
+
+def rename_filename(oldroot, newroot, oldname, newname):
+	filename, old_ext = os.path.splitext(oldname)
+
+	newname = newname + old_ext
+	old_file_path = os.path.join(oldroot, oldname)
+	new_file_path = os.path.join(newroot, newname)
+	print "rename {} to {}".format(old_file_path, new_file_path)
+	os.rename(old_file_path, new_file_path)
 
 def get_fingerprint(root, name):
 	FPCALC = "/usr/bin/fpcalc"
@@ -46,7 +56,7 @@ def get_fingerprint(root, name):
 	fingerprint = output[2].split("=")[1]
 	return fingerprint, duration
 
-def get_audio_meta(fingerprint, duration):
+def get_audio_meta(name, fingerprint, duration):
 	# Add server url
 	url = ACOUSTID_API_SERVER
 	# Add client
@@ -58,14 +68,14 @@ def get_audio_meta(fingerprint, duration):
 	# Add fingerprint
 	url += "&fingerprint={}".format(fingerprint)
 
-	print "Querying for metadata..."
+	print "Querying for metadata...", name
 	r = requests.get(url)
 	return r.text
 
 def parse_audio_json_data(audio_json_data):
 	title = ""
 	artist = ""
-	print "Json raw data", audio_json_data
+	#print "Json raw data", audio_json_data
 	data = json.loads(audio_json_data)
 	if data["status"] == "ok":
 		# Only interested in first entry as that is with highest matching score
@@ -73,8 +83,14 @@ def parse_audio_json_data(audio_json_data):
 		artist = data["results"][0]["recordings"][0]["artists"][0]["name"]
 	else:
 		print "Status is NOK"
-
 	return title, artist
+
+def add_tags_to_audio(root, name, title, artist):
+	f = taglib.File(os.path.join(root, name))
+	f.tags["ARTIST"] = [artist]
+	f.tags["TITLE"] = [title]
+	f.save()
+	print f.tags
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Audio auto tagger')
@@ -98,12 +114,13 @@ if __name__ == '__main__':
 	for root, dirs, files in os.walk(in_path, topdown=False):
 		for name in files:
 			ext = find_file_extension(root, name)
-			rename_file (root, output_path, name, ext)
+			rename_and_append_ext (root, output_path, name, ext)
 
 	for root, dirs, files in os.walk(output_path, topdown=False):
 		for name in files:
-			print "Filename ", name
 			fingerprint, duration = get_fingerprint(root, name)
-			audio_json_data = get_audio_meta(fingerprint, duration)
+			audio_json_data = get_audio_meta(name, fingerprint, duration)
 			title, artist = parse_audio_json_data(audio_json_data)
 			print "Title={}, Artist={}".format(title, artist)
+			add_tags_to_audio(root, name, title, artist)
+			rename_filename(root, output_path, name, title)
