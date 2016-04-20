@@ -46,7 +46,7 @@ def get_fingerprint(root, name):
 	fingerprint = output[2].split("=")[1]
 	return fingerprint, duration
 
-def get_audio_info(fingerprint, duration):
+def get_audio_meta(fingerprint, duration):
 	# Add server url
 	url = ACOUSTID_API_SERVER
 	# Add client
@@ -58,8 +58,23 @@ def get_audio_info(fingerprint, duration):
 	# Add fingerprint
 	url += "&fingerprint={}".format(fingerprint)
 
+	print "Querying for metadata..."
 	r = requests.get(url)
-	print r.text
+	return r.text
+
+def parse_audio_json_data(audio_json_data):
+	title = ""
+	artist = ""
+	print "Json raw data", audio_json_data
+	data = json.loads(audio_json_data)
+	if data["status"] == "ok":
+		# Only interested in first entry as that is with highest matching score
+		title = data["results"][0]["recordings"][0]["title"]
+		artist = data["results"][0]["recordings"][0]["artists"][0]["name"]
+	else:
+		print "Status is NOK"
+
+	return title, artist
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Audio auto tagger')
@@ -89,4 +104,6 @@ if __name__ == '__main__':
 		for name in files:
 			print "Filename ", name
 			fingerprint, duration = get_fingerprint(root, name)
-			get_audio_info(fingerprint, duration)
+			audio_json_data = get_audio_meta(fingerprint, duration)
+			title, artist = parse_audio_json_data(audio_json_data)
+			print "Title={}, Artist={}".format(title, artist)
