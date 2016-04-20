@@ -1,14 +1,13 @@
-Description:
+Description
+-----------
 
-Attempt to build application which take any random file, find out format of file,
-rename it with correct extension. 
+Application take folder with audio file, it try to find out format of file,
+rename it with correct extension. Use acoustID webapi to search for audio
+info and fill the file audio tags with the info.
 
-Use acousticID to search for audio info and fill the audio tags with the info.
-
-Dependencies:
+Dependencies
+------------
 aptitude/apt-get install python-mediainfodll
 aptitude/apt-get install libchromaprint-tools
-
-How to use:
-https://github.com/MediaArea/MediaInfoLib/blob/master/Source/Example/HowToUse_Dll.py
+pip install pytaglib
 
