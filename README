@@ -6,7 +6,8 @@ rename it with correct extension.
 Use acousticID to search for audio info and fill the audio tags with the info.
 
 Dependencies:
-aptitude install python-mediainfodll
+aptitude/apt-get install python-mediainfodll
+aptitude/apt-get install libchromaprint-tools
 
 How to use:
 https://github.com/MediaArea/MediaInfoLib/blob/master/Source/Example/HowToUse_Dll.py
