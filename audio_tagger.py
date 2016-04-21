@@ -82,14 +82,14 @@ def get_audio_meta(name, fingerprint, duration):
 def parse_audio_json_data(audio_json_data):
 	title = ""
 	artist = ""
-	#print "Json raw data", audio_json_data
+	print "Json raw data", audio_json_data
 	data = json.loads(audio_json_data)
 	if data["status"] == "ok":
 		try:
 			# Only interested in first entry as that is with highest matching score
 			title = data["results"][0]["recordings"][0]["title"]
 			artist = data["results"][0]["recordings"][0]["artists"][0]["name"]
-		except KeyError:
+		except (KeyError, IndexError):
 			print "Track metadata is not found in acoustid database, json_output: ", audio_json_data
 	else:
 		print "Status is NOK, json output: ", audio_json_data
