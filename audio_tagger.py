@@ -16,17 +16,20 @@ MI = MediaInfo()
 
 def find_file_extension(root, file_name):
 	ext = ""
+	codec = ""
+	container = ""
 	abs_file_path = os.path.join(root,file_name)
 	print "Analysing file ...", abs_file_path
 	MI.Open(abs_file_path)
 	container = MI.Get(Stream.General, 0, u"CodecID")
 	if not container:
 		codec = MI.Get(Stream.Audio, 0, u"Codec")
-		if codec == "MPA2L3":
+		if codec in ["MPA2L3", "MPA1L3"]:
 			ext =".mp3"
 	else:
 		if container == "mp42":
 			ext = ".m4a"
+	print "container: {}, codec: {}".format(container, codec)
 	MI.Close()
 	return ext
 
@@ -40,7 +43,11 @@ def rename_and_append_ext(oldroot, newroot, name, ext):
 		os.rename(old_file_path, new_file_path)
 
 def rename_filename(oldroot, newroot, oldname, newname):
-	filename, old_ext = os.path.splitext(oldname)
+	if not newname:
+		print "Empty new name, cant rename!"
+		return
+
+	_, old_ext = os.path.splitext(oldname)
 
 	newname = newname + old_ext
 	old_file_path = os.path.join(oldroot, oldname)
@@ -78,17 +85,20 @@ def parse_audio_json_data(audio_json_data):
 	#print "Json raw data", audio_json_data
 	data = json.loads(audio_json_data)
 	if data["status"] == "ok":
-		# Only interested in first entry as that is with highest matching score
-		title = data["results"][0]["recordings"][0]["title"]
-		artist = data["results"][0]["recordings"][0]["artists"][0]["name"]
+		try:
+			# Only interested in first entry as that is with highest matching score
+			title = data["results"][0]["recordings"][0]["title"]
+			artist = data["results"][0]["recordings"][0]["artists"][0]["name"]
+		except KeyError:
+			print "Track metadata is not found in acoustid database, json_output: ", audio_json_data
 	else:
-		print "Status is NOK"
-	return title, artist
+		print "Status is NOK, json output: ", audio_json_data
+	return title.encode('utf-8'), artist.encode('utf-8')
 
 def add_tags_to_audio(root, name, title, artist):
 	f = taglib.File(os.path.join(root, name))
-	f.tags["ARTIST"] = [artist]
-	f.tags["TITLE"] = [title]
+	f.tags[u"ARTIST"] = [artist]
+	f.tags[u"TITLE"] = [title]
 	f.save()
 	print f.tags
 
