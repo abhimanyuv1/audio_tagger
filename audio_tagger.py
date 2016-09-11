@@ -6,14 +6,11 @@ import subprocess
 import requests
 import json
 import taglib
-from MediaInfoDLL import *
+from pymediainfo import MediaInfo
 
 # https://acoustid.org/webservice
 ACOUSTID_CLIENT_ID = "g4mgdCmxmd"  # registered id
 ACOUSTID_API_SERVER = "http://api.acoustid.org/v2/lookup"
-
-MI = MediaInfo()
-
 
 def find_file_extension(root, file_name):
     ext = ""
@@ -21,17 +18,26 @@ def find_file_extension(root, file_name):
     container = ""
     abs_file_path = os.path.join(root, file_name)
     print "Analysing file ...", abs_file_path
-    MI.Open(abs_file_path)
-    container = MI.Get(Stream.General, 0, u"CodecID")
-    if not container:
-        codec = MI.Get(Stream.Audio, 0, u"Codec")
+    media_info = MediaInfo.parse(abs_file_path)
+    for track in media_info.tracks:
+        if track.track_type == 'General':
+            container = track.codec_id
+        if track.track_type == 'Audio':
+            codec = track.codec
+
+    if container is not None:
+        container = container.strip()
+
+    if codec is not None:
+        codec = codec.strip()
+
+    if container is None:
         if codec in ["MPA2L3", "MPA1L3"]:
             ext = ".mp3"
-    else:
-        if container == "mp42":
+    elif container == 'M4A':
             ext = ".m4a"
-    print "container: {}, codec: {}".format(container, codec)
-    MI.Close()
+
+    print "container: {}, codec: {}, ext: {}".format(container, codec, ext)
     return ext
 
 
@@ -60,7 +66,7 @@ def rename_filename(oldroot, newroot, oldname, newname):
 
 
 def get_fingerprint(root, name):
-    FPCALC = "/usr/bin/fpcalc"
+    FPCALC = "./fpcalc_bin/fpcalc"
     output = subprocess.check_output([FPCALC, os.path.join(root, name)])
     output = output.split("\n")
     duration = output[1].split("=")[1]
@@ -88,7 +94,7 @@ def get_audio_meta(name, fingerprint, duration):
 def parse_audio_json_data(audio_json_data):
     title = ""
     artist = ""
-    print "Json raw data", audio_json_data
+    #print "Json raw data", audio_json_data
     data = json.loads(audio_json_data)
     if data["status"] == "ok":
         try:

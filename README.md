@@ -8,8 +8,9 @@ info and fill the file audio tags with the info.
 Dependencies
 ==============
 ```bash
-$ apt-get install python-mediainfodll
-$ apt-get install libchromaprint-tools
-$ pip install pytaglib
+$ sudo apt-get install libtag1-dev
+$ sudo pip install requests
+$ sudo pip install pytaglib
+$ sudo pip install pymediainfo
 ```
 
